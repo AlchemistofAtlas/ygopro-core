@@ -42,17 +42,19 @@ public:
 	uint16 range;
 	uint16 s_range;
 	uint16 o_range;
+	uint8 count_limit;
+	uint8 count_limit_max;
 	uint16 reset_count;
 	uint32 reset_flag;
 	uint32 count_code;
 	uint32 category;
-	uint32 label;
 	uint32 hint_timing[2];
 	uint32 card_type;
 	uint32 active_type;
+	uint32 active_location;
 	card* active_handler;
-	uint16 field_ref;
 	uint16 status;
+	uint32 label;
 	void* label_object;
 	int32 condition;
 	int32 cost;
@@ -67,7 +69,7 @@ public:
 	int32 is_can_be_forbidden();
 	int32 is_available();
 	int32 check_count_limit(uint8 playerid);
-	int32 is_activateable(uint8 playerid, const tevent& e, int32 neglect_cond = FALSE, int32 neglect_cost = FALSE, int32 neglect_target = FALSE);
+	int32 is_activateable(uint8 playerid, const tevent& e, int32 neglect_cond = FALSE, int32 neglect_cost = FALSE, int32 neglect_target = FALSE, int32 neglect_loc = FALSE);
 	int32 is_action_check(uint8 playerid);
 	int32 is_activate_ready(uint8 playerid, const tevent& e, int32 neglect_cond = FALSE, int32 neglect_cost = FALSE, int32 neglect_target = FALSE);
 	int32 is_condition_check(uint8 playerid, const tevent& e);
@@ -83,14 +85,19 @@ public:
 	int32 get_value(uint32 extraargs = 0);
 	int32 get_value(card* pcard, uint32 extraargs = 0);
 	int32 get_value(effect* peffect, uint32 extraargs = 0);
+	void get_value(uint32 extraargs, std::vector<int32>* result);
+	void get_value(card* pcard, uint32 extraargs, std::vector<int32>* result);
+	void get_value(effect* peffect, uint32 extraargs, std::vector<int32>* result);
 	int32 check_value_condition(uint32 extraargs = 0);
 	int32 get_speed();
+	effect* clone();
 	card* get_owner() const;
 	uint8 get_owner_player();
 	card* get_handler() const;
 	uint8 get_handler_player();
-	int32 in_range(int32 loc, int32 seq);
 	int32 in_range(card* pcard);
+	int32 in_range(const chain& ch);
+	void set_activate_location();
 	bool is_flag(effect_flag flag) const {
 		return !!(this->flag[0] & flag);
 	}
@@ -101,7 +108,7 @@ public:
 
 //status
 #define EFFECT_STATUS_AVAILABLE	0x0001
-#define EFFECT_STATUS_ACTIVATED	0x0002
+//#define EFFECT_STATUS_ACTIVATED	0x0002
 
 #define EFFECT_COUNT_CODE_OATH 0x10000000
 #define EFFECT_COUNT_CODE_DUEL 0x20000000
@@ -143,6 +150,7 @@ public:
 #define EFFECT_TYPE_QUICK_F			0x0400	//
 #define EFFECT_TYPE_CONTINUOUS		0x0800	//
 #define EFFECT_TYPE_XMATERIAL		0x1000	//
+#define EFFECT_TYPE_GRANT			0x2000	//
 
 //========== Flags ==========
 enum effect_flag : uint32 {
@@ -241,7 +249,7 @@ inline effect_flag operator|(effect_flag flag1, effect_flag flag2)
 #define EFFECT_CANNOT_DISCARD_DECK		56	//
 #define EFFECT_CANNOT_USE_AS_COST		57	//
 #define EFFECT_CANNOT_PLACE_COUNTER		58	//
-
+#define EFFECT_CANNOT_TO_GRAVE_AS_COST	59	//
 #define EFFECT_LEAVE_FIELD_REDIRECT		60	//
 #define EFFECT_TO_HAND_REDIRECT			61	//
 #define EFFECT_TO_DECK_REDIRECT			62	//
@@ -317,6 +325,7 @@ inline effect_flag operator|(effect_flag flag1, effect_flag flag2)
 #define EFFECT_TRIBUTE_LIMIT			154
 #define EFFECT_EXTRA_RELEASE_SUM		155
 //#define EFFECT_TRIPLE_TRIBUTE			156
+#define EFFECT_ADD_EXTRA_TRIBUTE		157
 #define EFFECT_PUBLIC					160
 #define EFFECT_COUNTER_PERMIT			0x10000
 #define EFFECT_COUNTER_LIMIT			0x20000
@@ -357,6 +366,7 @@ inline effect_flag operator|(effect_flag flag1, effect_flag flag2)
 #define EFFECT_CANNOT_BE_SYNCHRO_MATERIAL	236
 #define EFFECT_SYNCHRO_MATERIAL_CUSTOM		237
 #define EFFECT_CANNOT_BE_XYZ_MATERIAL		238
+#define EFFECT_CANNOT_BE_LINK_MATERIAL		239
 #define EFFECT_SYNCHRO_LEVEL				240
 #define EFFECT_RITUAL_LEVEL					241
 #define EFFECT_XYZ_LEVEL					242
@@ -372,6 +382,7 @@ inline effect_flag operator|(effect_flag flag1, effect_flag flag2)
 #define EFFECT_USE_EXTRA_SZONE			262
 #define EFFECT_MAX_MZONE				263
 #define EFFECT_MAX_SZONE				264
+#define EFFECT_MUST_USE_MZONE			265
 #define EFFECT_HAND_LIMIT				270
 #define EFFECT_DRAW_COUNT				271
 #define EFFECT_SPIRIT_DONOT_RETURN		280
@@ -391,6 +402,9 @@ inline effect_flag operator|(effect_flag flag1, effect_flag flag2)
 #define EFFECT_TO_GRAVE_REDIRECT_CB		313
 #define EFFECT_CHANGE_LEVEL_FINAL		314
 #define EFFECT_CHANGE_RANK_FINAL		315
+#define EFFECT_MUST_BE_FMATERIAL		316
+#define EFFECT_MUST_BE_XMATERIAL		317
+#define EFFECT_MUST_BE_LMATERIAL		318
 #define EFFECT_SPSUMMON_PROC_G			320
 #define EFFECT_SPSUMMON_COUNT_LIMIT		330
 #define EFFECT_LEFT_SPSUMMON_COUNT		331
@@ -415,6 +429,7 @@ inline effect_flag operator|(effect_flag flag1, effect_flag flag2)
 //#define EFFECT_REMOVE_FUSION_ATTRIBUTE	350
 #define EFFECT_CHANGE_FUSION_ATTRIBUTE	351
 #define EFFECT_EXTRA_FUSION_MATERIAL	352
+#define EFFECT_TUNER_MATERIAL_LIMIT		353
 
 #define EVENT_STARTUP		1000
 #define EVENT_FLIP			1001

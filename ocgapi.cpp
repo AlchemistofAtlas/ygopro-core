@@ -44,15 +44,10 @@ byte* default_script_reader(const char* script_name, int* slen) {
 	fp = fopen(script_name, "rb");
 	if (!fp)
 		return 0;
-	fseek(fp, 0, SEEK_END);
-	uint32 len = ftell(fp);
-	if (len > sizeof(buffer)) {
-		fclose(fp);
-		return 0;
-	}
-	fseek(fp, 0, SEEK_SET);
-	fread(buffer, len, 1, fp);
+	int len = fread(buffer, 1, sizeof(buffer), fp);
 	fclose(fp);
+	if(len >= sizeof(buffer))
+		return 0;
 	*slen = len;
 	return buffer;
 }
@@ -297,6 +292,7 @@ extern "C" DECL_DLLEXPORT int32 query_field_card(ptr pduel, uint8 playerid, uint
 extern "C" DECL_DLLEXPORT int32 query_field_info(ptr pduel, byte* buf) {
 	duel* ptduel = (duel*)pduel;
 	*buf++ = MSG_RELOAD_FIELD;
+	*buf++ = ptduel->game_field->core.duel_rule;
 	for(int playerid = 0; playerid < 2; ++playerid) {
 		auto& player = ptduel->game_field->player[playerid];
 		*((int*)(buf)) = player.lp;
@@ -335,7 +331,7 @@ extern "C" DECL_DLLEXPORT int32 query_field_info(ptr pduel, byte* buf) {
 		*((int*)(buf)) = peffect->get_handler()->get_info_location();
 		buf += 4;
 		*buf++ = chit->triggering_controler;
-		*buf++ = chit->triggering_location;
+		*buf++ = (uint8)chit->triggering_location;
 		*buf++ = chit->triggering_sequence;
 		*((int*)(buf)) = peffect->description;
 		buf += 4;
